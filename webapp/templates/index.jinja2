@@ -27,15 +27,10 @@
                             <td style="color: blue"> {% if screenname_lookup_details["account_status"] is not none%} {{screenname_lookup_details["account_status"] }} {% else %} {% endif %}</td>
                             <td style="color: blue"> {% if screenname_lookup_details["name"] is not none%} {{ screenname_lookup_details["name"] }} {% else %} {% endif %}</td>
                             <td style="color: blue"> {% if screenname_lookup_details["last_active"] is not none%} {{ screenname_lookup_details["last_active"] }} {% else %} {% endif %}</td>
-                            <td style="color: red"> {% if screenname_lookup_details["ip_address"] is not none%} {{ screenname_lookup_details["ip_address"] }} {% else %} {{ screenname_lookup_details["no_ip"] }} {% endif %}</td>
-                            <td style="color: purple"> {{ screenname_lookup_details["dns_responder"] }} </td>
                         </tr>
             {% endfor %}
         {% else %}
             <tr>
-                <td></td>
-                <td></td>
-                <td></td>
                 <td></td>
                 <td></td>
                 <td></td>
