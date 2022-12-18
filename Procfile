@@ -1,1 +1,1 @@
-web: gunicorn --chdir webapp isstillontwitter.fyi:app
+web: gunicorn --chdir webapp isstillontwitter:app
