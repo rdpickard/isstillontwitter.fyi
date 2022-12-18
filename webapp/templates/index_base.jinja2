@@ -1,0 +1,95 @@
+<!doctype html>
+<head>
+    <title>Are they still on Twitter?</title>
+    <link href="css/semantic.min.css" rel="stylesheet">
+    <script src="js/jquery-3.4.1.min.js"></script>
+    <script src="js/semantic.min.js"></script>
+</head>
+
+<body>
+
+<div class="ui container" style="overflow-x: scroll">
+
+    <br>
+    <br>
+
+    {% if error_message is defined and error_message is not none or error_message == "" %}
+        <div class="ui negative message">
+            <i class="close icon"></i>
+            <div class="header">
+                {{ error_message }}
+            </div>
+            {% if more_info_message is defined and more_info_message is not none %}
+                <p>{{ more_info_message }}</p>
+            {% endif %}
+        </div>
+    {% else %}
+    {% endif %}
+
+    <h1 class="ui header">Are they still on Twitter?</h1>
+
+   <div class="content">
+       Don't want to have to look at Nazi crap to see if someone is still on Twitter? Check here!
+         <a href="#json_section"> here</a>.
+    </div>
+
+    <br>
+
+    {% block content %}
+    {% endblock %}
+
+    <h4 class="ui horizontal divider header" id="json_section">
+        JSON
+    </h4>
+    <div class="content">
+        Results can also be fetched as JSON. Example:<br><br>
+
+        <p style="font-family: monospace; font-weight: lighter" id="curl-example">
+        </p>
+    </div>
+
+
+<script>
+
+    function auto_grow(element) {
+    element.style.height = "5px";
+    element.style.height = (element.scrollHeight)+"px";
+}
+    $('.ui.accordion').accordion();
+
+    $(document).ready(function () {
+        $("#curl-example").text("curl -H 'Content-Type: application/json' " + window.location.href)
+        lookup_screennames = window.location.pathname.replace("/", "").split(",")
+        $('#screennames_to_lookup').val(lookup_screennames.join(" "))
+
+        var arr = window.location.search.substring(1);
+        if (arr.length > 1 && arr[1] !== '') {
+            $("#show_more_settings").click()
+        }
+    });
+
+    $('#screennames_to_lookup').keypress(function (e) {
+        var key = e.which;
+        if (key == 13) {
+            $('#lookup_screennames_button').click();
+            return false;
+        }
+    });
+
+    $("#lookup_screennames_button").click(function () {
+        lookup_screennames = $("#screennames_to_lookup").val().trim().replace(/\s\s+/g, ' ').replace(/\t/g, ' ').split(" ")
+
+        goto_url = window.location.protocol + "//" + window.location.host + "/" + lookup_screennames.join(",")
+
+        params_dict = {}
+
+        if (Object.keys(params_dict).length > 0) {
+            goto_url = goto_url + "?" + $.param(params_dict)
+        }
+
+        window.location = goto_url
+    });
+
+</script>
+</body>
+

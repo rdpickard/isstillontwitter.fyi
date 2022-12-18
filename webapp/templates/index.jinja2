@@ -1,0 +1,49 @@
+{% extends 'index_base.jinja2' %}
+
+{% block content %}
+
+    <div class=" ui big fluid action input">
+        <input type="text" style="color: green" placeholder="Space seperated list of screen names"
+               id="screennames_to_lookup"/>
+        <button class="ui button green" id="lookup_screennames_button">Still on Twitter?</button>
+    </div>
+
+    <table class="ui celled compact table">
+        <thead>
+        <tr>
+            <th><div class="ui  label teal">Screen Name</div></th>
+            <th><div class="ui  label teal">Still On Twitter?</div></th>
+            <th><div class="ui  label blue">Account Status</div></th>
+            <th><div class="ui  label blue">Display Name </div></th>
+            <th><div class="ui  label blue">Last Active </div></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% if lookup_results is defined %}
+            {% for lookup_screenname, screenname_lookup_details in lookup_results["data"].items() %}
+                        <tr>
+                            <td style="color: teal"> {% if screenname_lookup_details["screen_name"] is not none%}{{ screenname_lookup_details["screen_name"] }} {% else %} {% endif %}</td>
+                            <td style="color: teal"> {% if screenname_lookup_details["has_account"] is not none%}{{ screenname_lookup_details["has_account"] }} {% else %} {% endif %} </td>
+                            <td style="color: blue"> {% if screenname_lookup_details["account_status"] is not none%} {{screenname_lookup_details["account_status"] }} {% else %} {% endif %}</td>
+                            <td style="color: blue"> {% if screenname_lookup_details["name"] is not none%} {{ screenname_lookup_details["name"] }} {% else %} {% endif %}</td>
+                            <td style="color: blue"> {% if screenname_lookup_details["last_active"] is not none%} {{ screenname_lookup_details["last_active"] }} {% else %} {% endif %}</td>
+                            <td style="color: red"> {% if screenname_lookup_details["ip_address"] is not none%} {{ screenname_lookup_details["ip_address"] }} {% else %} {{ screenname_lookup_details["no_ip"] }} {% endif %}</td>
+                            <td style="color: purple"> {{ screenname_lookup_details["dns_responder"] }} </td>
+                        </tr>
+            {% endfor %}
+        {% else %}
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+            </tr>
+        {% endif %}
+        </tbody>
+    </table>
+
+{% endblock %}
