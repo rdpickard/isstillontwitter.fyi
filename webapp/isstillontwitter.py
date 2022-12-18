@@ -34,10 +34,10 @@ Mobility(app)
 
 try:
     with open(TWITTER_ERROR_MSG_SCHEMA_PATH) as twitter_errormsg_schema_fp:
-        app.logger.debug(f"Loading provider IP space file schema file {TWITTER_ERROR_MSG_SCHEMA_PATH}")
+        app.logger.debug(f"Twitter error file schema file {TWITTER_ERROR_MSG_SCHEMA_PATH}")
         twitter_error_msg_jsonschema = json.load(twitter_errormsg_schema_fp)
 except Exception as e:
-    app.logger.critical(f"Could not open or access provider IP space file schema file "
+    app.logger.critical(f"Could not open or access twitter error file schema file "
                         f"'{TWITTER_ERROR_MSG_SCHEMA_PATH}' from '{os.getcwd()}'. Can't start. Exiting")
     sys.exit(-1)
 
