@@ -293,10 +293,6 @@ def default_page():
         requested_host = request.headers["X-Forwarded-Host"]
     elif "Host" in request.headers.keys():
         requested_host = request.headers["Host"]
-    else:
-        app.logger.info("NO TIN THERE")
-        app.logger.info(str(",".join(request.headers.keys())))
-        app.logger.info(str(request.headers))
 
     if requested_host is not None:
         requested_host_elements = requested_host.split(".")
