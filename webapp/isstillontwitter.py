@@ -294,6 +294,8 @@ def default_page():
     elif "Host" in request.headers.keys():
         requested_host = request.headers["Host"]
     else:
+        app.logger.info("NO TIN THERE")
+        app.logger.info(str(",".join(request.headers.keys())))
         app.logger.info(str(request.headers))
 
     if requested_host is not None:
