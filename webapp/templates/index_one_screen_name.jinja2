@@ -1,0 +1,19 @@
+{% extends 'index_base_one_screen_name.jinja2' %}
+
+{% block content %}
+
+    {% if lookup_results["data"] is defined and lookup_results["data"]|length >= 1%}
+        {% set screen_name = lookup_results["data"]|first %}
+        {% set lookup_result = lookup_results["data"][screen_name] %}
+        {% if lookup_result["has_account"] is not none and lookup_result["has_account"]%}
+            {% if lookup_result["account_status"] == "suspended" %}
+                Yes, {{ screen_name }} is still on Twitter but is suspended
+            {% elif lookup_result["account_status"] == "protected" %}
+                Yes, {{ screen_name }} is still on Twitter but the account is locked
+            {% else %}
+                Yes, {{ screen_name }} is still on Twitter
+            {% endif %}
+        {% else %}No, {{ screen_name }} is not still on Twitter. Or maybe never was {% endif %}
+        {% else %}
+    {% endif %}
+{% endblock %}
