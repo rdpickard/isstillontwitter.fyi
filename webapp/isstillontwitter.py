@@ -291,8 +291,8 @@ def default_page():
     requested_host = None
     if "X-Forwarded-Host" in request.headers.keys():
         requested_host = request.headers["X-Forwarded-Host"]
-    elif "host" in request.headers.keys():
-        requested_host = request.headers["host"]
+    elif "Host" in request.headers.keys():
+        requested_host = request.headers["Host"]
     else:
         app.logger.info(str(request.headers))
 
