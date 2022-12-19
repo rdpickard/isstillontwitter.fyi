@@ -288,8 +288,15 @@ def default_page():
 
     screen_name_from_host_name = None
 
+    requested_host = None
     if "X-Forwarded-Host" in request.headers.keys():
         requested_host = request.headers["X-Forwarded-Host"]
+    elif "host" in request.headers.keys():
+        requested_host = request.headers["host"]
+    else:
+        app.logger.info(str(request.headers))
+
+    if requested_host is not None:
         requested_host_elements = requested_host.split(".")
 
         if not re.match(ip_regex_complied, requested_host) and len(requested_host_elements) > 2 and requested_host_elements[0].lower() != "www":
