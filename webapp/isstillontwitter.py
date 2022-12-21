@@ -3,9 +3,7 @@ import re
 import json
 import logging
 import os
-import urllib.parse
 import sys
-import datetime
 import uuid
 
 import arrow
@@ -14,7 +12,7 @@ from flask import Flask, request, jsonify
 from flask_mobility import Mobility
 from werkzeug.middleware.proxy_fix import ProxyFix
 import requests
-import redis
+# import redis
 import jsonschema
 
 
@@ -43,6 +41,8 @@ ip_regex = r'((^\s*((([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9
            r'1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$))'
 ip_regex_complied = re.compile(ip_regex)
 
+twitter_scree_name_regex = re.compile(r'^[a-zA-Z0-9_]{1,15}$')
+
 TWITTER_ERROR_MSG_SCHEMA_PATH = "schemas/twitter_error_response_schema.json"
 
 twitter_api_screen_name_lookup_endpoint = "https://api.twitter.com/1.1/users/show.json?screen_name=%(screen_name)s"
@@ -60,12 +60,12 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1)
 Mobility(app)
 
 try:
-    with open(TWITTER_ERROR_MSG_SCHEMA_PATH) as twitter_errormsg_schema_fp:
+    with open(TWITTER_ERROR_MSG_SCHEMA_PATH) as twitter_error_msg_schema_fp:
         app.logger.debug(f"Twitter error file schema file {TWITTER_ERROR_MSG_SCHEMA_PATH}")
-        twitter_error_msg_jsonschema = json.load(twitter_errormsg_schema_fp)
+        twitter_error_msg_jsonschema = json.load(twitter_error_msg_schema_fp)
 except Exception as e:
     app.logger.critical(f"Could not open or access twitter error file schema file "
-                        f"'{TWITTER_ERROR_MSG_SCHEMA_PATH}' from '{os.getcwd()}'. Can't start. Exiting")
+                        f"'{TWITTER_ERROR_MSG_SCHEMA_PATH}' from '{os.getcwd()}'. err is {e} Can't start. Exiting")
     sys.exit(-1)
 
 
@@ -104,6 +104,7 @@ class CacheIfCacheCan:
             else:
                 self._redis_interface.set(key, value, timeout)
 
+
 class TwitterAPIException(Exception):
     endpoint = None
 
@@ -112,27 +113,33 @@ class TwitterAPIException(Exception):
         self.message = message
         super().__init__(self.message)
 
+
 class TwitterAPIAuthException(TwitterAPIException):
     pass
+
 
 class TwitterAPIRateLimitedException(TwitterAPIException):
     pass
 
+
 class TwitterAPIBehaviorException(TwitterAPIException):
     pass
+
 
 def error_code_is_in_twitter_response(error_response, code):
     jsonschema.validate(error_response, twitter_error_msg_jsonschema)
 
-    error_codes = list(map(lambda errobj: errobj['code'], error_response["errors"]))
+    error_codes = list(map(lambda err_obj: err_obj['code'], error_response["errors"]))
     in_there = code in error_codes
     return in_there, [x for x in error_codes if x != code]
 
-def serialize_requests_response_to_b64(respnse):
-    rspnse_string = f"{respnse.status_code}\n\n{respnse.headers}\n\n{respnse.txt[:1024]}"
-    return str(base64.b64encode(rspnse_string.encode('ascii')))
 
-def lookup_screen_name_last_activity_time(screen_name):
+def serialize_requests_response_to_b64(flask_response: flask.Response):
+    response_as_string = f"{flask_response.status_code}\n\n{flask_response.headers}\n\n{str(flask_response)[:1024]}"
+    return str(base64.b64encode(response_as_string.encode('ascii')))
+
+
+def lookup_screen_name_last_activity_time(_):
     """
     timeline_lookup_result = requests.get(
                 twitter_api_timeline_lookup_endpoint % {"screen_name": lookup_screen_name},
@@ -142,7 +149,6 @@ def lookup_screen_name_last_activity_time(screen_name):
                 lookup_result["last_active"] = timeline_lookup_result.json()[0]["created_at"]
                 lookup_result["lookup_success"] = "full"
                 """
-
     # TODO do activity lookup
     return "Unknown"
 
@@ -176,7 +182,7 @@ def lookup_screen_name(screen_name):
             else:
                 # the account tweets are public
                 lookup_result["account_status"] = "public"
-                last_activity = lookup_screen_name_last_activity_time(screen_name)
+                lookup_result["last_active"] = lookup_screen_name_last_activity_time(screen_name)
         case 404:
             # no account
             is_notfound, extra_codes = error_code_is_in_twitter_response(screen_name_lookup_result.json(), twitter_api_err_code_user_notfound)
@@ -207,8 +213,8 @@ def lookup_screen_name(screen_name):
             raise TwitterAPIRateLimitedException(endpoint, "Rate limit exceeded")
         case _:
             log_id = str(uuid.uuid4())
-            app.logger.info( f"Twitter response to {log_id} {serialize_requests_response_to_b64(screen_name_lookup_result)}")
-            raise TwitterAPIBehaviorException(endpoint, f"Unhandled status repsonse status code {screen_name_lookup_result.status_code} logged as {log_id}")
+            app.logger.info(f"Twitter response to {log_id} {serialize_requests_response_to_b64(screen_name_lookup_result)}")
+            raise TwitterAPIBehaviorException(endpoint, f"Unhandled status response status code {screen_name_lookup_result.status_code} logged as {log_id}")
 
     return lookup_result
 
@@ -257,9 +263,11 @@ def do_all_screen_name_lookups(screen_names_list):
 
     return lookup_results
 
+
 @app.route('/css/<path:path>')
 def send_css(path):
     return flask.send_from_directory('staticfiles/css', path)
+
 
 @app.route('/js/<path:path>')
 def send_js(path):
@@ -295,6 +303,8 @@ def default_page():
         requested_host = request.headers["Host"]
 
     if requested_host is not None:
+        # strip off port if there is one
+        requested_host = requested_host.split(":")[0]
         requested_host_elements = requested_host.split(".")
 
         if not re.match(ip_regex_complied, requested_host) and len(requested_host_elements) > 2 and requested_host_elements[0].lower() != "www":
@@ -304,7 +314,6 @@ def default_page():
         lookup_results = do_all_screen_name_lookups([])
     else:
         lookup_results = do_all_screen_name_lookups([screen_name_from_host_name])
-
 
     if flask.request.content_type is not None and flask.request.content_type.startswith('application/json'):
         return_json = True
@@ -317,7 +326,6 @@ def default_page():
         else:
             template = "index_one_screen_name.jinja2"
 
-
     if return_json:
         return jsonify(lookup_results), 200
     else:
@@ -328,12 +336,9 @@ def default_page():
 @app.route("/<lookup_screen_names_list>")
 def lookup(lookup_screen_names_list):
 
-    lookup_results = {
-        "date": str(arrow.utcnow()),
-        "data": {},
-        "error_messages": [],
-        "warning_messages": []
-    }
+    # ignore requests from scanning pests requesting things like xml.php and .env
+    if "," not in lookup_screen_names_list and not re.match(twitter_scree_name_regex, lookup_screen_names_list):
+        flask.abort(404)
 
     try:
         # Figure out if the response should be just the JSON data or HTML
@@ -360,7 +365,7 @@ def lookup(lookup_screen_names_list):
             print(lookup_results)
 
     except Exception as ee:
-        app.logger.error("Unhandled exception '{}' doing hostname lookup for request '{}'".format(ee, lookup_screen_names))
+        app.logger.error("Unhandled exception '{}' doing hostname lookup for request '{}'".format(ee, lookup_screen_names_list))
         logging.exception(ee)
         return "Unrecoverable err in doing lookup error is {}".format(ee), 500
 
